@@ -1,0 +1,70 @@
+1.activate my environment:
+conda activate my_smu
+
+2.extract tar files: tar -xf GSE154600_RAW.tar
+
+find . -type f -name '*T77*' -print0 | xargs -0 mv -t lustre/work/client/users/
+yuannaw/singlecells/T77/
+
+check all the files under the folder----------------ls
+
+3.move files to one folder
+mv GSM4816047_barcodes_16030X4_HJTWLDMXX.tsv.gz GSM4816047_features_16030X4_HJTWLDMXX.tsv.gz GSM4816047_matrix_16030X4_HJTWLDMXX.mtx.gz /lustre/work/client/users/yuannaw/singlecells/X4/
+
+
+10/4/2023
+4.convert tsv.gz to tsv-----------gunzip yourfile.tsv.gz
+if a folder------------gunzip /path/to/folder/*.gz
+(base) yuannaw@m3login04:/lustre/work/client/users/yuannaw/singlecells/T59$ cd /lustre/work/client/users/yuannaw/singlecells
+
+5.change all the names to barcodes.tsv, genes.tsv, matrix.mtx
+
+6. run R language
+install.packages("Seurat")
+library(Seurat)
+library(stringr)
+install.packages("remotes")
+remotes::install_github("lazappi/clustree@develop")#install package from github
+library(clustree)
+library(dplyr)
+BiocManager::install("GSVA")
+library(GSVA)
+install.packages("msigdbr")
+library(msigdbr)
+BiocManager::install("GSEABase")
+library(GSEABase)
+install.packages("pheatmap")
+library(pheatmap)
+install.packages("harmony")
+library(harmony)
+rm(list = ls())
+gc()#free up memory
+getwd()#show the path
+setwd("/lustre/work/client/users/yuannaw/singlecells")
+#1.read data from each sample
+#test
+data_directory <- "/lustre/work/client/users/yuannaw/singlecells/T59"
+counts = Read10X(data_directory)
+T59_counts<-Read10X(data.dir = "/lustre/work/client/users/yuannaw/singlecells/T59")
+T59<-CreateSeuratObject(counts = T59_counts,
+                                min.features = 100)
+head(T59@meta.data)
+#run
+for (fileobj in c("T59", "T76","T77","T89","T90","X2","X3","X4")){
+  seurat_data <- Read10X(data.dir = paste0("/lustre/work/client/users/yuannaw/singlecells/", fileobj))
+  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
+                                   project = fileobj)
+  assign(fileobj, seurat_obj)
+}
+seurat_obj@project.name
+head(T59@meta.data)
+head(T76@meta.data)
+class(seurat_obj)
+# Create a merged Seurat object
+seurat_list <- list(T59,T76,T77,T89,T90,X2,X3,X4)
+sce<- Reduce(function(x, y) merge(x, y), seurat_list)
+dim(sce)
+#38224 genes 67323 cells
+
+
+
